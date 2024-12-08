@@ -1,0 +1,76 @@
+import time
+from sphero_sdk import SpheroRvrObserver
+from sphero_sdk import Colors
+
+# Initialize the RVR
+rvr = SpheroRvrObserver()
+
+def is_yellow(color):
+    """
+    Check if the detected color is yellow.
+    :param color: A dictionary with keys 'red', 'green', and 'blue'.
+    :return: True if the color is yellow.
+    """
+    return color.get('red', 0) > 200 and color.get('green', 0) > 200 and color.get('blue', 0) < 100
+
+def is_red(color):
+    """
+    Check if the detected color is red.
+    :param color: A dictionary with keys 'red', 'green', and 'blue'.
+    :return: True if the color is red.
+    """
+    return color.get('red', 0) > 200 and color.get('green', 0) < 100 and color.get('blue', 0) < 100
+
+def drive_until_color(color_check):
+    """
+    Drive forward until the RVR detects a specific color.
+    :param color_check: A function that checks for the desired color.
+    """
+    print("Driving forward...")
+    rvr.drive_with_heading(speed=50, heading=0)
+    while True:
+        # Get the detected color
+        detected_color = rvr.get_color_identification_report()
+        if detected_color and color_check(detected_color):
+            print(f"Detected color: {detected_color}")
+            rvr.stop()
+            print("Stopping RVR.")
+            break
+        time.sleep(0.1)
+
+def spin_rvr():
+    """
+    Make the RVR perform one full spin (360 degrees).
+    """
+    print("Spinning 360 degrees...")
+    rvr.drive_with_heading(speed=50, heading=360)
+    time.sleep(2)  # Adjust as needed for a complete spin
+    rvr.stop()
+    print("Spin complete.")
+
+def main():
+    try:
+        # Wake up the RVR
+        rvr.wake()
+        time.sleep(2)  # Allow time for the RVR to wake up
+
+        # Enable color sensor
+        rvr.enable_color_detection(is_enabled=True)
+
+        # Drive forward and stop at yellow
+        drive_until_color(is_yellow)
+
+        # Spin around 360 degrees
+        spin_rvr()
+
+        # Drive forward and stop at red
+        drive_until_color(is_red)
+
+    finally:
+        # Stop the RVR and put it in sleep mode
+        rvr.stop()
+        rvr.sleep()
+        print("RVR stopped and sleeping.")
+
+if __name__ == "__main__":
+    main()
